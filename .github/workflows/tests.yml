@@ -11,6 +11,5 @@ jobs:
         with:
           python-version: "3.11"
       - run: python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
-      - run: python -m pip install -e '.[hf,test]'
+      - run: python -m pip install -e '.[test]'
       - run: python -m pytest -q
-      - run: python -m nano_deepinfer --trace --max-tokens 4

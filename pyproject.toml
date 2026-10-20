@@ -7,14 +7,13 @@ name = "nano-deepinfer"
 version = "0.1.0"
 description = "A small CPU-first inference engine inspired by DeepInfer"
 requires-python = ">=3.10"
-dependencies = ["torch>=2.2"]
+dependencies = [
+    "torch>=2.2", "transformers>=4.46,<5",
+    "safetensors>=0.4", "huggingface-hub>=0.26",
+]
 
 [project.optional-dependencies]
-hf = ["transformers>=4.46,<5", "safetensors>=0.4", "huggingface-hub>=0.26"]
 test = ["pytest>=8"]
-
-[project.scripts]
-nano-deepinfer = "nano_deepinfer.__main__:main"
 
 [tool.setuptools.packages.find]
 include = ["nano_deepinfer*"]

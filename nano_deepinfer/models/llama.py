@@ -1,63 +1,8 @@
-"""Plain PyTorch Llama: RMSNorm, RoPE, grouped-query attention, SwiGLU."""
-
-from dataclasses import dataclass, fields
 import math
 
 import torch
 from torch import nn
 from torch.nn import functional as F
-
-from .cache import KVCache
-
-
-@dataclass(frozen=True)
-class Config:
-    vocab_size: int = 256
-    hidden_size: int = 64
-    intermediate_size: int = 128
-    num_hidden_layers: int = 2
-    num_attention_heads: int = 4
-    num_key_value_heads: int = 2
-    max_position_embeddings: int = 256
-    rms_norm_eps: float = 1e-5
-    rope_theta: float = 10000.0
-    tie_word_embeddings: bool = False
-
-    def __post_init__(self):
-        for name in (
-            "vocab_size", "hidden_size", "intermediate_size", "num_hidden_layers",
-            "num_attention_heads", "num_key_value_heads", "max_position_embeddings",
-        ):
-            if not isinstance(getattr(self, name), int) or getattr(self, name) < 1:
-                raise ValueError(f"{name} must be a positive integer")
-        if self.hidden_size % self.num_attention_heads:
-            raise ValueError("hidden_size must be divisible by num_attention_heads")
-        if self.num_attention_heads % self.num_key_value_heads:
-            raise ValueError("query heads must be divisible by KV heads")
-        if (self.hidden_size // self.num_attention_heads) % 2:
-            raise ValueError("RoPE requires an even head dimension")
-        if not math.isfinite(self.rope_theta) or self.rope_theta <= 0:
-            raise ValueError("rope_theta must be finite and positive")
-        if not math.isfinite(self.rms_norm_eps) or self.rms_norm_eps <= 0:
-            raise ValueError("rms_norm_eps must be finite and positive")
-
-    @classmethod
-    def from_hf(cls, data):
-        if data.get("model_type") != "llama":
-            raise ValueError("only Llama checkpoints are supported")
-        if (
-            data.get("rope_scaling") or data.get("attention_bias")
-            or data.get("mlp_bias") or data.get("rope_interleaved")
-            or data.get("hidden_act", "silu") != "silu"
-            or data.get("sliding_window")
-        ):
-            raise ValueError("requires plain RoPE, full attention, SiLU and no biases")
-        config = cls(**{f.name: data[f.name] for f in fields(cls) if f.name in data})
-        if data.get("head_dim", config.hidden_size // config.num_attention_heads) != (
-            config.hidden_size // config.num_attention_heads
-        ):
-            raise ValueError("custom head_dim is unsupported")
-        return config
 
 
 class RMSNorm(nn.Module):
@@ -146,8 +91,19 @@ class Decoder(nn.Module):
 
 
 class Llama(nn.Module):
-    def __init__(self, config=Config()):
+    def __init__(self, config):
         super().__init__()
+        head_dim = config.hidden_size // config.num_attention_heads
+        if (
+            config.model_type != "llama" or config.rope_scaling
+            or config.attention_bias or config.mlp_bias or config.hidden_act != "silu"
+            or getattr(config, "rope_interleaved", False)
+            or getattr(config, "sliding_window", None)
+            or config.hidden_size % config.num_attention_heads
+            or config.num_attention_heads % config.num_key_value_heads
+            or head_dim % 2 or getattr(config, "head_dim", head_dim) != head_dim
+        ):
+            raise ValueError("requires standard Llama with plain RoPE and no biases")
         self.config = config
         self.model = Decoder(config)
         self.lm_head = nn.Linear(config.hidden_size, config.vocab_size, bias=False)

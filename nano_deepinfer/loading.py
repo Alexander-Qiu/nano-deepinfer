@@ -1,24 +1,22 @@
-"""Optional Hugging Face I/O; execution stays inside our own Llama and Engine."""
-
 import json
 from pathlib import Path
 
-from .model import Config, Llama
+from huggingface_hub import snapshot_download
+from safetensors.torch import load_file
+from transformers import AutoConfig, AutoTokenizer
+
+from .models.llama import Llama
 
 
 def load_pretrained(model_id, revision=None):
-    from huggingface_hub import snapshot_download
-    from safetensors.torch import load_file
-    from transformers import AutoTokenizer
-
     path = Path(model_id)
     if not path.is_dir():
         path = Path(snapshot_download(
             model_id, revision=revision,
             allow_patterns=["*.json", "*.safetensors", "*.model", "*.jinja"],
         ))
-    config = Config.from_hf(json.loads((path / "config.json").read_text()))
-    model = Llama(config)
+    config = AutoConfig.from_pretrained(path, trust_remote_code=False)
+    model = Llama(config).float().cpu()
     index_path = path / "model.safetensors.index.json"
     if index_path.exists():
         index = json.loads(index_path.read_text())
