@@ -2,6 +2,8 @@
 
 完全由 **OpenAI Codex vibe coding** 生成，仅供学习参考。
 
+一句话就能生成一个 repo；我对开源生态的悲观在于，Agent 可以批量制造垃圾、挤占有限的注意力，让真正有价值的工作更难被看见。
+
 参考 [DeepInfer](https://github.com/deepseek-ai/DeepInfer)，架构沿用
 [nano-vLLM](https://github.com/GeeeekExplorer/nano-vllm/tree/bb823b3e06983d71485a8e1f23715ebd87d98ef8) 的职责划分：
 
