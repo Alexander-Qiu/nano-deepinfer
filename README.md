@@ -2,8 +2,6 @@
 
 **本仓库完全由 OpenAI Codex 通过 vibe coding 生成，仅供学习与参考。**
 
-从需求讨论、代码编写到文档和测试，均由 Codex 在人的指导下完成。这里记录的是一个由 AI 辅助快速构建、逐步验证的小型推理引擎实验，不代表生产级质量或性能保证。
-
 **This repository is entirely vibe-coded by OpenAI Codex under human direction, for learning and reference only.**
 
 ## 想做什么
